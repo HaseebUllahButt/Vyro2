@@ -31,6 +31,7 @@ print(f"Loading base model: {MODEL_ID}")
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
     quantization_config=bnb_config,
+    torch_dtype=torch.float16,             # Force float16 — Qwen defaults to bf16 which crashes fp16 AMP on T4
     device_map="auto",
     trust_remote_code=True,
     attn_implementation="eager",
