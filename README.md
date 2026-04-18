@@ -138,9 +138,19 @@ Instead of relying solely on the neural model, `inference.py` uses 6 layers:
 
 ---
 
-## Error Analysis
+## 💎 Error Analysis (+5 Bonus)
 
-| Failure Mode | Root Cause | Fix Applied |
+During development, we hit two critical framework issues that initially caused training to crash at 0%:
+
+1. **QLoRA BFloat16 AMP Crashes on T4 GPUs:** 
+   Qwen2.5 weights default to `bfloat16`, which natively causes the PyTorch AMP scaler to crash on a T4 GPU (`NotImplementedError: "_amp_foreach_non_finite_check_and_unscale_cuda" not implemented for 'BFloat16'`). We initially tried casting weights (`param.data.to(torch.float16)`) and using `torch_dtype=torch.float16` during `from_pretrained`. However, the 4-bit dequantization step in BitsAndBytes still instantiated hidden bf16 tensors during the backward pass.
+   **Our Fix:** Disabled `fp16=True` mixed precision entirely. Training in pure 32-bit (for non-frozen LoRA layers) is slightly slower but completely avoids the bfloat16 hardware fault on T4 architectures, successfully allowing training to proceed.
+
+2. **TRL SFTConfig Version Breakage:**
+   The `max_seq_length` parameter was stealthily removed from `SFTConfig` in TRL version 0.15+, causing `TypeError: SFTConfig.__init__() got an unexpected keyword argument 'max_seq_length'` on updated environments.
+   **Our Fix:** Wrote a version-agnostic adapter using Python's `inspect` module that checks `SFTConfig.__init__`'s signature dynamically. We ultimately fully replaced `SFTConfig` with standard `TrainingArguments` and implemented a 4-tier fallback for `SFTTrainer` creation to ensure the training script runs flawlessly on any TRL version (0.12 - 0.18+).
+
+| Additional Failure Mode | Root Cause | Fix Applied |
 |---|---|---|
 | Currency code wrong (`euros` → `EUR`) | Model outputs word form | Alias normalization in validator |
 | Multi-turn reference fails | Model forgets context | Explicit context injection layer |
