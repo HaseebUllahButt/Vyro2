@@ -31,12 +31,19 @@ print(f"Loading base model: {MODEL_ID}")
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
     quantization_config=bnb_config,
-    torch_dtype=torch.float16,             # Force float16 — Qwen defaults to bf16 which crashes fp16 AMP on T4
     device_map="auto",
     trust_remote_code=True,
     attn_implementation="eager",
 )
 model.config.use_cache = False
+
+# Force ALL non-quantized params to float16.
+# Qwen2.5 ships with bfloat16 layer norms — BnB doesn't quantize these,
+# so they stay bf16 and crash the fp16 AMP gradient scaler on T4.
+for name, param in model.named_parameters():
+    if param.dtype == torch.bfloat16:
+        param.data = param.data.to(torch.float16)
+print("All bfloat16 params cast to float16 ✅")
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
