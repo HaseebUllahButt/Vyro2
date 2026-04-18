@@ -78,8 +78,15 @@ dataset = dataset.map(format_chat, remove_columns=["messages"])
 print(f"Training on {len(dataset)} examples")
 print("Sample:\n", dataset[0]["text"][:300])
 
-# ── Training config ───────────────────────────────────────────────────────────
-sft_config = SFTConfig(
+# ── Training config (version-safe across all TRL releases) ───────────────────
+import inspect
+
+# Detect if SFTConfig accepts max_seq_length (TRL < 0.15) or not (TRL >= 0.15)
+_sft_params = inspect.signature(SFTConfig.__init__).parameters
+_has_max_seq = "max_seq_length" in _sft_params
+_has_packing  = "packing" in _sft_params
+
+_base_kwargs = dict(
     output_dir=OUTPUT_DIR,
     num_train_epochs=5,
     per_device_train_batch_size=8,
@@ -91,31 +98,38 @@ sft_config = SFTConfig(
     logging_steps=10,
     save_strategy="epoch",
     save_total_limit=2,
-    max_seq_length=512,
-    packing=False,
     dataset_text_field="text",
     report_to="none",                      # no wandb
 )
 
-# ── Trainer ───────────────────────────────────────────────────────────────────
-# TRL >= 0.12 uses processing_class; fallback to tokenizer for older versions
-try:
-    trainer = SFTTrainer(
-        model=model,
-        processing_class=tokenizer,
-        args=sft_config,
-        train_dataset=dataset,
-        peft_config=lora_config,
-    )
-except TypeError:
-    # TRL < 0.12 compatibility fallback
-    trainer = SFTTrainer(
-        model=model,
-        tokenizer=tokenizer,
-        args=sft_config,
-        train_dataset=dataset,
-        peft_config=lora_config,
-    )
+if _has_max_seq:
+    _base_kwargs["max_seq_length"] = 512
+else:
+    # Newer TRL: control length via tokenizer
+    tokenizer.model_max_length = 512
+
+if _has_packing:
+    _base_kwargs["packing"] = False
+
+sft_config = SFTConfig(**_base_kwargs)
+
+# ── Trainer (version-safe) ────────────────────────────────────────────────────
+_trainer_extra = {} if _has_max_seq else {"max_seq_length": 512}
+
+for _tok_kwarg in ("processing_class", "tokenizer"):
+    try:
+        trainer = SFTTrainer(
+            model=model,
+            **{_tok_kwarg: tokenizer},
+            args=sft_config,
+            train_dataset=dataset,
+            peft_config=lora_config,
+            **_trainer_extra,
+        )
+        print(f"Trainer created with {_tok_kwarg}= ✅")
+        break
+    except TypeError:
+        continue
 
 print("Starting training…")
 trainer.train()
@@ -124,3 +138,4 @@ print(f"Saving adapter → {OUTPUT_DIR}")
 trainer.save_model(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
 print("Training complete ✅")
+
