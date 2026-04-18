@@ -51,7 +51,7 @@ Test file format (one JSON object per line):
 
 | Artifact | Location | Size |
 |---|---|---|
-| Quantized model | [HuggingFace Hub](https://huggingface.co/YOUR_USERNAME/pocket-agent) | ~220 MB |
+| Quantized model | [HuggingFace Hub](https://huggingface.co/Haseeb9009/Vyrothon) | ~220 MB |
 | LoRA adapter | `artifacts/lora_adapter/` (in repo) | ~20 MB |
 
 ---
@@ -74,7 +74,7 @@ Refusals: plain text, no `<tool_call>` tag.
 ## Reproduce Training
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pocket-agent
+git clone https://github.com/HaseebUllahButt/Vyro2
 cd pocket-agent
 # Open notebooks/01_train.ipynb in Colab T4 GPU → Run All
 # OR
