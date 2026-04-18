@@ -1,0 +1,10 @@
+artifacts/model.gguf
+artifacts/model_f16.gguf
+artifacts/model_q3km.gguf
+artifacts/model_q4km.gguf
+artifacts/merged_model/
+/data/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
