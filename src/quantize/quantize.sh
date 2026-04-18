@@ -53,14 +53,37 @@ echo "════════════════════════�
 echo " Step 3: Quantize"
 echo "════════════════════════════════════════"
 
+QUANTIZE_BIN=""
+for candidate in \
+    "./llama.cpp/build/bin/llama-quantize" \
+    "./llama.cpp/llama-quantize" \
+    "./llama.cpp/build/bin/quantize" \
+    "./llama.cpp/quantize"
+do
+    if [ -x "$candidate" ]; then
+        QUANTIZE_BIN="$candidate"
+        break
+    fi
+done
+
+if [ -z "$QUANTIZE_BIN" ]; then
+    echo "ERROR: quantize binary not found."
+    echo "Build llama.cpp first, e.g.:"
+    echo "  cd llama.cpp && cmake -B build && cmake --build build --config Release -j4"
+    echo "Then rerun: bash src/quantize/quantize.sh"
+    exit 1
+fi
+
+echo "Using quantizer: $QUANTIZE_BIN"
+
 # Primary: Q3_K_M (~210MB) — targets ≤250MB bonus gate
-./llama.cpp/llama-quantize \
+"$QUANTIZE_BIN" \
     ./artifacts/model_f16.gguf \
     ./artifacts/model_q3km.gguf \
     Q3_K_M
 
 # Fallback: Q4_K_M (~280MB) — if Q3 quality is insufficient
-./llama.cpp/llama-quantize \
+"$QUANTIZE_BIN" \
     ./artifacts/model_f16.gguf \
     ./artifacts/model_q4km.gguf \
     Q4_K_M
