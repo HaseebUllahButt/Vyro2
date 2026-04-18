@@ -8,12 +8,18 @@ Fine-tuned mobile assistant for structured tool calling. Fully offline. No netwo
 
 ---
 
-## Quick Start for Judges
+## 🏛️ FOR JUDGES: ONE-CLICK DEMO
 
-1. Open `notebooks/02_judge_demo.ipynb` in Google Colab
-2. Set runtime to **CPU** (Runtime → Change runtime type → None/CPU)
-3. **Run All** — takes ~5 minutes total
-4. A public `gradio.live` URL appears at the end of Cell 6
+The quickest way to grade this submission and interact with the **Gradio Frontend**:
+
+1. **[Click here to open the Judge Demo Notebook](https://colab.research.google.com/github/HaseebUllahButt/Vyro2/blob/main/notebooks/02_judge_demo.ipynb)**
+2. Ensure runtime is set to **CPU** (Runtime → Change runtime type → None/CPU).
+3. Click **Run All** (Runtime → Run all).
+4. **Scroll to Cell 6** — in about 4-5 minutes, a **public `gradio.live` link** will appear. Click it to chat with the Pocket-Agent!
+
+---
+
+## Technical Quick Start
 
 **To test a specific prompt from Python:**
 ```python
